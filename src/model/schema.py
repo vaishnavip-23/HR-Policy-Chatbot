@@ -10,7 +10,6 @@ class Chunk(BaseModel):
     chunk_summary: str = Field(..., description="2-3 sentence summary for embedding")
     
     # Filtering (CRITICAL for comparisons)
-    hr_topic: str = Field(..., description="leave_policy, compensation, benefits, etc.")
     section_title: str = Field(..., description="Section heading")
     
     # Citations
