@@ -8,4 +8,7 @@ dependencies = [
     "boto3>=1.42.25",
     "llama-parse>=0.6.89",
     "python-dotenv>=1.2.1",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "langchain-text-splitters>=0.2.0",
 ]
