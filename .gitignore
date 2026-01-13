@@ -13,4 +13,9 @@ wheels/
 # Source files
 doc/
 
+# Generated files
 chunks_output.json
+chroma_db/
+bm25_index.pkl
+cache/
+logs/
