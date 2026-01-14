@@ -13,6 +13,3 @@ for doc_id in ["chemexcil", "iima", "tccap"]:
 
 embed_and_store(all_chunks)
 create_bm25_index(all_chunks)
-    
-
-

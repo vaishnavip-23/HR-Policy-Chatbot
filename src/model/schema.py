@@ -1,10 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List
 
-# ============================================================================
-# CHUNKING SCHEMAS
-# ============================================================================
-
 class Chunk(BaseModel):
     # Identity
     chunk_id: str = Field(..., description="Unique ID: {doc_id}_{index}")
@@ -26,9 +22,6 @@ class Chunk(BaseModel):
     end_offset: int = Field(..., description="Char offset in full doc")
 
 
-# ============================================================================
-# RETRIEVAL SCHEMAS
-# ============================================================================
 
 class RetrievedChunk(BaseModel):
     """A chunk retrieved from hybrid search with relevance score."""
@@ -72,9 +65,6 @@ class FinalResults(BaseModel):
     rerank_time_ms: float = Field(..., description="Reranking time in milliseconds")
 
 
-# ============================================================================
-# QUERY TRANSLATION SCHEMAS (for query_translate.py)
-# ============================================================================
 
 class InputQuery(BaseModel):
     query: str = Field(..., description="User query")
@@ -89,15 +79,14 @@ class FinalQueries(BaseModel):
     variations: List[str] = Field(..., min_length=3, max_length=3, description="3 query variations")
 
 
-# ============================================================================
-# ANSWER GENERATION SCHEMAS (for answer_gen.py)
-# ============================================================================
 
 class RankedChunk(BaseModel):
     """A chunk after RRF ranking (used by alternative retrieval approach)."""
     chunk_id: str = Field(..., description="Unique chunk identifier")
+    doc_id: str = Field(..., description="Source document")
     text: str = Field(..., description="Full chunk text")
     chunk_summary: str = Field(..., description="Chunk summary")
+    section_title: str = Field(..., description="Section heading")
     page_start: int = Field(..., description="First page")
     page_end: int = Field(..., description="Last page")
     rrf_score: float = Field(..., description="RRF score")
@@ -115,6 +104,8 @@ class FinalRankedResults(BaseModel):
 class Citation(BaseModel):
     """Individual citation reference."""
     chunk_id: str = Field(..., description="Chunk ID used for this citation")
+    doc_id: str = Field(..., description="Source document")
+    section_title: str = Field(..., description="Section heading")
     page_start: int = Field(..., description="Starting page number")
     page_end: int = Field(..., description="Ending page number")
 
