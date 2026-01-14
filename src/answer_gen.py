@@ -47,6 +47,7 @@ QUERY: {query}
 INSTRUCTIONS:
 
 1. **Content Requirements:**
+   - **IMPORTANT:** Check instructions 5 & 6 first for ambiguous or out-of-context queries
    - Provide a comprehensive, well-structured answer based ONLY on the provided context
    - For comparisons, create clear side-by-side summaries highlighting key differences
    - For complex questions requiring reasoning:
@@ -89,10 +90,21 @@ INSTRUCTIONS:
      * Query not directly addressed in the chunks
      * For comparisons: only one organization has relevant data
 
-5. **Edge Cases:**
-   - If context doesn't fully answer the query, acknowledge limitations clearly
-   - If question is unrelated to HR policies, politely decline and do NOT include citations
-   - Never make up information not present in the context
+5. **Ambiguous Queries:**
+   If the query is too vague or ambiguous (e.g., "What are the leave policies?" without specifying which organization):
+   - Ask a clarifying question
+   - Suggest specific options (e.g., "Which organization? IIMA, CHEMEXCIL, or TCCAP?")
+   - Or ask if they want a comparison across all organizations
+   - Set confidence to "low"
+   - Do NOT provide a full answer without clarification
+
+6. **Out-of-Context Queries:**
+   If the query is completely unrelated to the HR policy documents:
+   - Keep response very brief (1-2 sentences maximum)
+   - Simply state: "This question is outside the scope of the HR policy documents. I can only answer questions about IIMA, CHEMEXCIL, and TCCAP HR policies."
+   - Do NOT include any citations
+   - Set confidence to "low"
+   - Do NOT attempt to answer the question generally
 
 Return your answer in the structured format with proper citations and confidence level."""
 
