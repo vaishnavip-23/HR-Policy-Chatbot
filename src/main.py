@@ -1,7 +1,11 @@
 from r2.r2_client import download_parsed_files
 from chunking import chunking_markdown
+from embed_store import embed_and_store
+from bm25_index import create_bm25_index
 import asyncio
 import json
+
+
 
 
 def print_chunk_details(chunk, show_full_text=False):
@@ -87,10 +91,29 @@ async def main():
     # Save all chunks to JSON
     save_chunks_to_json(all_chunks)
     
-    # TODO: Next steps
-    # - Generate embeddings for chunk_summary
-    # - Store chunks in vector DB (ChromaDB)
-    # - Setup hybrid search (BM25 + vector)
+    # Create embeddings and store in ChromaDB
+    print(f"\n{'='*60}")
+    print(f"EMBEDDING & STORING IN VECTOR DB")
+    print(f"{'='*60}")
+    embed_and_store(all_chunks)
+    
+    # Create BM25 index
+    print(f"\n{'='*60}")
+    print(f"CREATING BM25 INDEX")
+    print(f"{'='*60}")
+    create_bm25_index(all_chunks)
+    
+    print(f"\n{'='*60}")
+    print(f"✓ PIPELINE COMPLETE!")
+    print(f"{'='*60}")
+    print(f"Created:")
+    print(f"  - {len(all_chunks)} chunks")
+    print(f"  - ChromaDB vector store (./chroma_db/)")
+    print(f"  - BM25 index (./bm25_index.pkl)")
+    print(f"  - chunks_output.json")
+    
+    print(f"\nReady for retrieval!")
+    print(f"  Run: uv run streamlit run streamlit/app.py")
     
     return all_chunks
 
