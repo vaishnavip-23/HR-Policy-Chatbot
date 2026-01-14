@@ -19,3 +19,6 @@ chroma_db/
 bm25_index.pkl
 cache/
 logs/
+
+# Evaluation files
+eval/
