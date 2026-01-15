@@ -470,9 +470,9 @@ def search(
     query: str, 
     top_k: int = 35, 
     rerank: bool = True, 
-    top_n: int = 10,
-    use_query_expansion: bool = True,  # ✅ ON by default for better recall
-    k_per_query: int = 6,  # ✅ Slightly increased for better coverage
+    top_n: int = 15,  
+    use_query_expansion: bool = True,  
+    k_per_query: int = 6,  
     rerank_method: str = "local"
 ) -> FinalResults:
     """
@@ -480,18 +480,18 @@ def search(
     
     Default behavior (recommended):
     - Expands query into 4 variants (1 original + 3 variations)
-    - Retrieves 5 results from BM25 and 5 from Vector per query = 40 total per query
-    - Total: 4 queries × 40 results = ~160 results (with duplicates)
-    - After RRF fusion: top_k=30 unique results
-    - After local rerank: top_n=10 final results (FREE!)
+    - Retrieves 6 results from BM25 and 6 from Vector per query = 12 total per query
+    - Total: 4 queries × 12 results = ~48 results (with duplicates)
+    - After RRF fusion: top_k=35 unique results
+    - After local rerank: top_n=15 final results 
     
     Args:
         query: User query
-        top_k: Number of candidates after RRF fusion (default: 30)
+        top_k: Number of candidates after RRF fusion (default: 35)
         rerank: Whether to use reranking (default: True)
-        top_n: Number of final results after reranking (default: 10)
+        top_n: Number of final results after reranking (default: 15, increased for better multi-org coverage)
         use_query_expansion: Use query translation for better recall (default: True)
-        k_per_query: Results per retriever per query variant (default: 5)
+        k_per_query: Results per retriever per query variant (default: 6)
         rerank_method: Reranking method - "local" (free) or "cohere" (paid, needs API key)
     
     Returns:
