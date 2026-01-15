@@ -1,0 +1,99 @@
+# =============================================================================
+# .dockerignore - Files to exclude from Docker build context
+# =============================================================================
+# Smaller build context = faster builds, smaller images, more secure
+# =============================================================================
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Virtual environments (we install fresh in Docker)
+.venv/
+venv/
+ENV/
+env/
+
+# Environment files (use Cloud Run secrets instead!)
+.env
+.env.*
+*.env
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+*.sublime-*
+
+# Documentation (not needed in production)
+*.md
+!README.md
+docs/
+
+# Evaluation files (not needed in production)
+eval/
+
+# Test files
+test_*.py
+*_test.py
+tests/
+pytest.ini
+
+# Source PDFs (already processed into chunks)
+doc/
+
+# Chunks JSON (already processed into ChromaDB)
+chunks_output.json
+
+# Logs and temporary files
+*.log
+logs/
+*.tmp
+tmp/
+temp/
+
+# Coverage reports
+.coverage
+htmlcov/
+.pytest_cache/
+
+# R2 upload scripts (only needed for indexing)
+src/r2/
+
+# Package manager files (already handled by uv)
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Docker files (don't copy Docker into Docker!)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Large archives
+*.zip
+*.tar.gz
+*.rar
+
+# Backup files
+*.bak
+*.backup
+*~

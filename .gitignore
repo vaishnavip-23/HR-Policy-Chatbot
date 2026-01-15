@@ -20,5 +20,7 @@ bm25_index.pkl
 cache/
 logs/
 
+DEPLOYMENT.md
+
 # Evaluation files
 eval/
