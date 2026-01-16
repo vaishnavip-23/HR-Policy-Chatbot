@@ -1,13 +1,4 @@
-# =============================================================================
-# Multi-Doc RAG - Production Dockerfile (Multi-Stage Build)
-# =============================================================================
-# Stage 1: Builder - Install dependencies
-# Stage 2: Runtime - Small, optimized final image
-# =============================================================================
 
-# =============================================================================
-# STAGE 1: BUILDER
-# =============================================================================
 FROM python:3.11-slim AS builder
 
 # Set working directory
@@ -25,9 +16,7 @@ COPY pyproject.toml uv.lock ./
 # --no-dev: Skip development dependencies (ragas, testing tools)
 RUN uv sync --frozen --no-dev
 
-# =============================================================================
-# STAGE 2: RUNTIME
-# =============================================================================
+
 FROM python:3.11-slim
 
 # Set working directory
@@ -45,6 +34,13 @@ COPY streamlit/ ./streamlit/
 # Without these, the app won't work!
 COPY chroma_db/ ./chroma_db/
 COPY bm25_index.pkl ./bm25_index.pkl
+
+# Pre-download HuggingFace models during build (avoids runtime download + rate limits)
+RUN /app/.venv/bin/python -c "\
+from sentence_transformers import CrossEncoder; \
+print('Downloading cross-encoder model...'); \
+CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2'); \
+print('Model cached successfully')"
 
 # Environment variables
 # PATH: Tell Python where to find installed packages
