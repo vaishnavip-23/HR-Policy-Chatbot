@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # Title
-st.title("📋 Multi-Doc HR Policy RAG Assistant")
+st.title("📋 HR Policy RAG Assistant")
 st.markdown("Ask questions about HR policies of organizations IIMA, Chemexcil, TCCAP and get accurate answers with citations.")
 
 # Initialize session state for chat history
