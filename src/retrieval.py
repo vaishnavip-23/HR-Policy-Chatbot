@@ -1,22 +1,14 @@
 from typing import List, Optional, Dict
-import os
 import pickle
 import time
-import chromadb
-from openai import OpenAI
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 from model.schema import RetrievedChunk, RerankedChunk, RetrievalResults, FinalResults
-import cohere
 
 load_dotenv()
-
-# Initialize clients
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-cohere_client = cohere.Client(api_key=os.getenv("COHERE_API_KEY")) if os.getenv("COHERE_API_KEY") else None
 
 # Global reranker model (loaded once)
 _reranker_model = None
@@ -314,67 +306,6 @@ def hybrid_search_with_expansion(query: str, top_k: int = 30, k_per_query: int =
     )
 
 
-def rerank_with_cohere(
-    query: str, 
-    retrieval_results: RetrievalResults, 
-    top_n: int = 5
-) -> FinalResults:
-    """
-    Rerank retrieved chunks using Cohere Rerank API.
-    
-    Args:
-        query: User query
-        retrieval_results: Results from hybrid_search
-        top_n: Number of top chunks to return after reranking
-    
-    Returns:
-        FinalResults with reranked chunks
-    """
-    print(f"\nReranking {len(retrieval_results.chunks)} candidates with Cohere...")
-    
-    start_time = time.time()
-    
-    # Prepare documents for Cohere (use chunk text)
-    documents = [chunk.text for chunk in retrieval_results.chunks]
-    
-    # Call Cohere Rerank API
-    rerank_response = cohere_client.rerank(
-        model="rerank-english-v3.0",
-        query=query,
-        documents=documents,
-        top_n=top_n
-    )
-    
-    # Convert to RerankedChunk objects
-    reranked_chunks = []
-    for result in rerank_response.results:
-        original_chunk = retrieval_results.chunks[result.index]
-        
-        reranked_chunk = RerankedChunk(
-            chunk_id=original_chunk.chunk_id,
-            doc_id=original_chunk.doc_id,
-            text=original_chunk.text,
-            chunk_summary=original_chunk.chunk_summary,
-            section_title=original_chunk.section_title,
-            page_start=original_chunk.page_start,
-            page_end=original_chunk.page_end,
-            rerank_score=result.relevance_score,
-            original_score=original_chunk.relevance_score
-        )
-        reranked_chunks.append(reranked_chunk)
-    
-    elapsed_ms = (time.time() - start_time) * 1000
-    
-    print(f"✓ Reranked to top {len(reranked_chunks)} chunks in {elapsed_ms:.1f}ms")
-    
-    return FinalResults(
-        query=query,
-        chunks=reranked_chunks,
-        retrieval_time_ms=0.0,  # Set by caller
-        rerank_time_ms=elapsed_ms
-    )
-
-
 def load_reranker_model():
     """
     Load local cross-encoder reranker model (one-time load).
@@ -472,11 +403,10 @@ def search(
     rerank: bool = True, 
     top_n: int = 15,  
     use_query_expansion: bool = True,  
-    k_per_query: int = 6,  
-    rerank_method: str = "local"
+    k_per_query: int = 6
 ) -> FinalResults:
     """
-    Complete search pipeline: hybrid retrieval with query expansion + optional reranking.
+    Complete search pipeline: hybrid retrieval with query expansion + local reranking.
     
     Default behavior (recommended):
     - Expands query into 4 variants (1 original + 3 variations)
@@ -488,11 +418,10 @@ def search(
     Args:
         query: User query
         top_k: Number of candidates after RRF fusion (default: 35)
-        rerank: Whether to use reranking (default: True)
+        rerank: Whether to use local reranking (default: True)
         top_n: Number of final results after reranking (default: 15, increased for better multi-org coverage)
         use_query_expansion: Use query translation for better recall (default: True)
         k_per_query: Results per retriever per query variant (default: 6)
-        rerank_method: Reranking method - "local" (free) or "cohere" (paid, needs API key)
     
     Returns:
         FinalResults with best matching chunks
@@ -516,16 +445,9 @@ def search(
     
     retrieval_time = (time.time() - retrieval_start) * 1000
     
-    # Step 2: Rerank if enabled
+    # Step 2: Local reranking
     if rerank and len(retrieval_results.chunks) > 0:
-        if rerank_method == "cohere":
-            if cohere_client is None:
-                print("⚠️  Cohere API key not found, falling back to local reranker")
-                final_results = rerank_with_local_model(query, retrieval_results, top_n=top_n)
-            else:
-                final_results = rerank_with_cohere(query, retrieval_results, top_n=top_n)
-        else:  # "local" (default)
-            final_results = rerank_with_local_model(query, retrieval_results, top_n=top_n)
+        final_results = rerank_with_local_model(query, retrieval_results, top_n=top_n)
         
         final_results.retrieval_time_ms = retrieval_time
         return final_results
@@ -568,7 +490,7 @@ def search_with_filter(
         query: User query
         doc_ids: List of doc_ids to filter (None = all documents)
         top_k: Number of candidates from hybrid search
-        rerank: Whether to use Cohere reranking
+        rerank: Whether to use local reranking
         top_n: Number of final results
     
     Returns:
@@ -629,7 +551,7 @@ def search_with_filter(
     
     # Rerank if enabled
     if rerank and len(chunks) > 0:
-        final_results = rerank_with_cohere(query, retrieval_results, top_n=top_n)
+        final_results = rerank_with_local_model(query, retrieval_results, top_n=top_n)
         final_results.retrieval_time_ms = retrieval_time
         return final_results
     else:
@@ -656,48 +578,4 @@ def search_with_filter(
         )
 
 
-def print_results(results: FinalResults):
-    """Pretty print search results."""
-    print(f"\n{'='*70}")
-    print(f"SEARCH RESULTS")
-    print(f"{'='*70}")
-    print(f"Query: {results.query}")
-    print(f"Retrieval time: {results.retrieval_time_ms:.1f}ms")
-    print(f"Rerank time: {results.rerank_time_ms:.1f}ms")
-    print(f"Total time: {results.retrieval_time_ms + results.rerank_time_ms:.1f}ms")
-    print(f"\nTop {len(results.chunks)} results:")
-    
-    for i, chunk in enumerate(results.chunks, 1):
-        print(f"\n{'-'*70}")
-        print(f"Rank {i} | Score: {chunk.rerank_score:.4f}")
-        print(f"Doc: {chunk.doc_id} | Pages: {chunk.page_start}-{chunk.page_end}")
-        print(f"Section: {chunk.section_title}")
-        print(f"\nSummary: {chunk.chunk_summary[:200]}...")
-        print(f"\nText preview: {chunk.text[:300]}...")
-    
-    print(f"\n{'='*70}")
-
-
-if __name__ == "__main__":
-    # Test the retrieval system
-    print("Testing retrieval system...")
-    
-    # Test 1: General search
-    results = search(
-        query="How many annual leave days in IIMA?",
-        top_k=20,
-        rerank=True,
-        top_n=5
-    )
-    print_results(results)
-    
-    # Test 2: Filtered search
-    results = search_with_filter(
-        query="What is the maternity leave policy?",
-        doc_ids=["iima", "chemexcil"],
-        top_k=10,
-        rerank=True,
-        top_n=3
-    )
-    print_results(results)
 
