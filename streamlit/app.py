@@ -9,6 +9,8 @@ sys.path.append(str(ROOT / "src"))
 from retrieval import search
 from answer_gen import generate_answer
 from model.schema import FinalRankedResults, RankedChunk
+from safety_guard import is_query_safe
+from query_classifier import classify_query, IntentType
 
 # Page config
 st.set_page_config(
@@ -19,7 +21,7 @@ st.set_page_config(
 
 # Title
 st.title("📋 Multi-Doc HR Policy RAG Assistant")
-st.markdown("Ask questions about HR policies (IIMA, Chemexcil, TCCAP) and get accurate answers with citations.")
+st.markdown("Ask questions about HR policies of organizations IIMA, Chemexcil, TCCAP and get accurate answers with citations.")
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
@@ -51,9 +53,55 @@ if query := st.chat_input("Ask a question about HR policies..."):
     # Generate response
     with st.chat_message("assistant"):
         try:
-            with st.status("Running pipeline...", expanded=True) as status:
+            # Step 1: Safety Check
+            safety_placeholder = st.empty()
+            safety_placeholder.info("🛡️ Checking query safety...")
+            
+            is_safe, safety_reason = is_query_safe(query, use_llm_check=True)
+            
+            if not is_safe:
+                # Query is unsafe - display warning and block
+                safety_placeholder.empty()
+                st.error(safety_reason)
+                st.warning("If you believe this is an error, please rephrase your question.")
+                
+                # Add to chat history
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"🚫 {safety_reason}\n\nPlease ask a legitimate question about HR policies."
+                })
+                st.stop()
+            
+            safety_placeholder.success("✅ Query is safe")
+            
+            # Step 2: Intent Classification
+            intent_placeholder = st.empty()
+            intent_placeholder.info("🎯 Classifying query intent...")
+            
+            intent, fixed_response = classify_query(query, use_llm=True)
+            
+            if intent != IntentType.HR_POLICY_QUESTION:
+                # Handle with fixed response (no RAG needed)
+                intent_placeholder.success(f"✅ Intent: {intent.value}")
+                st.markdown(fixed_response)
+                
+                # Add to chat history
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": fixed_response
+                })
+                st.stop()
+            
+            intent_placeholder.success("✅ Intent: HR Policy Question")
+            
+            # Clear status messages before showing answer
+            safety_placeholder.empty()
+            intent_placeholder.empty()
+            
+            # Step 3: RAG Pipeline (only for HR policy questions)
+            with st.status("Running RAG pipeline...", expanded=True) as status:
                 status.write("Translating query and running hybrid search (BM25 + Vector)...")
-                results = search(query, rerank_method="local")
+                results = search(query)
                 
                 status.write("Reranking with local cross-encoder...")
                 
@@ -83,7 +131,7 @@ if query := st.chat_input("Ask a question about HR policies..."):
                 )
                 
                 answer = generate_answer(query, final_results)
-                status.update(label="Done", state="complete")
+                status.update(label="Done!", state="complete")
             
             # Display answer (includes inline citations)
             st.markdown(answer.answer)
@@ -132,11 +180,13 @@ with st.sidebar:
     st.header("ℹ️ About")
     st.markdown("""
     This RAG system uses:
+    - **🛡️ Safety Guard**: Detects and blocks prompt injection attempts
+    - **🎯 Intent Classification**: Fast responses for greetings and meta-questions
     - **Query Translation**: Generates multiple query variations
     - **Dense Retrieval**: Semantic search on chunk summaries
     - **Sparse Retrieval**: BM25 keyword search on full text
     - **RRF Reranking**: Reciprocal Rank Fusion for merging results
-    - **LLM Answer Generation**: GPT-5-mini with citations
+    - **LLM Answer Generation**: Answers using GPT-5-mini along with citations
     """)
     
     if st.button("🗑️ Clear Chat History"):
