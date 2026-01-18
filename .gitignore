@@ -22,6 +22,8 @@ cache/
 logs/
 
 DEPLOYMENT.md
+docker_command.md
 
 # Evaluation files
 eval/
+
