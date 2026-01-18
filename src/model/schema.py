@@ -37,7 +37,7 @@ class RetrievedChunk(BaseModel):
 
 
 class RerankedChunk(BaseModel):
-    """A chunk after Cohere reranking with updated score."""
+    """A chunk after reranking with updated relevance score."""
     chunk_id: str = Field(..., description="Unique chunk identifier")
     doc_id: str = Field(..., description="Source document")
     text: str = Field(..., description="Full chunk text")
@@ -45,7 +45,7 @@ class RerankedChunk(BaseModel):
     section_title: str = Field(..., description="Section heading")
     page_start: int = Field(..., description="First page")
     page_end: int = Field(..., description="Last page")
-    rerank_score: float = Field(..., description="Cohere rerank relevance score (0-1)")
+    rerank_score: float = Field(..., description="Reranker relevance score (0-1)")
     original_score: float = Field(..., description="Original retrieval score")
 
 
@@ -115,3 +115,16 @@ class Answer(BaseModel):
     answer: str = Field(..., description="Comprehensive answer to the user's query")
     citations: List[Citation] = Field(..., description="Citations used in the answer")
     confidence: str = Field(..., description="Confidence level: high, medium, or low")
+
+
+class SafetyCheckResult(BaseModel):
+    """Result of safety check for prompt injection detection."""
+    is_safe: bool = Field(description="True if query is safe to process")
+    category: str = Field(description="Category: safe, prompt_injection, data_exfiltration, jailbreak, or malicious")
+    reason: str = Field(description="Brief explanation of the decision")
+
+
+class IntentClassificationResult(BaseModel):
+    """Result of intent classification."""
+    intent: str = Field(description="Intent type: greeting, about_app, hr_policy_question, or out_of_scope")
+    confidence: float = Field(description="Confidence score between 0.0 and 1.0")
