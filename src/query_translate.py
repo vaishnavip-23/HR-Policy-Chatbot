@@ -1,7 +1,6 @@
+import instructor
 from dotenv import load_dotenv
 from model.schema import QueryVariations, FinalQueries, InputQuery
-import instructor
-import os
 
 load_dotenv()
 
