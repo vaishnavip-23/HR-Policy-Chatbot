@@ -1,5 +1,3 @@
-import os
-from openai import OpenAI
 import instructor
 from model.schema import FinalRankedResults, Answer, Citation
 from dotenv import load_dotenv
