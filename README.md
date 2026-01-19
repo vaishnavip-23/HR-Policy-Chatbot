@@ -30,26 +30,25 @@ cp .env.example .env
 HR policy documents are stored in the R2 bucket. These documents are downloaded using a pre-signed URL and parsed into Markdown with page mapping. The resulting Markdown documents undergo section-aware chunking with split and overlap when chunk size exceeds the limit. These chunks are used to generate the ChromaDB and BM25 databases.
 
 ### 2. Query Pipeline
-User Query
-    ↓
-Safety Check (block prompt injection)
-    ↓
-Intent Classification
-    ├─ "Hi" → Greeting response
-    ├─ "What can you do?" → About response
-    └─ "Leave policy?" → Proceed to RAG
-    ↓
-Query Expansion (generate 3 variations)
-    ↓
-Hybrid Search (parallel)
-    ├─ BM25: Keyword matching (k=6)
-    └─ Vector: Semantic matching (k=6)
-    ↓
-Reciprocal Rank Fusion (merge results)
-    ↓
-Reranking (cross-encoder scores)
-    ↓
-Answer Generation (answer + citations)
+
+```mermaid
+graph TD
+    A["User Query"] --> B["Safety Check"]
+    B --> C["Intent Classification"]
+    C --> D{Query Type}
+    D -->|Greeting| E["Greeting Response"]
+    D -->|About| F["About Response"]
+    D -->|Policy Question| G["Proceed to RAG"]
+    G --> H["Query Expansion"]
+    H --> I["Hybrid Search"]
+    I --> J["BM25<br/>Keyword Matching"]
+    I --> K["Vector<br/>Semantic Matching"]
+    J --> L["Reciprocal Rank Fusion"]
+    K --> L
+    L --> M["Reranking"]
+    M --> N["Answer Generation"]
+    N --> O["Answer + Citations"]
+```
 
 
 ## Deployment 
