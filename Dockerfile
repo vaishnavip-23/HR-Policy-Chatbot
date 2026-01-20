@@ -1,4 +1,5 @@
 
+# Step 1
 FROM python:3.11-slim AS builder
 
 # Set working directory
@@ -16,7 +17,7 @@ COPY pyproject.toml uv.lock ./
 # --no-dev: Skip development dependencies (ragas, testing tools)
 RUN uv sync --frozen --no-dev
 
-
+# Step 2
 FROM python:3.11-slim
 
 # Set working directory
