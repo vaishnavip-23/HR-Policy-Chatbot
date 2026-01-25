@@ -1,5 +1,7 @@
 import streamlit as st
 import sys
+import os
+import time
 from pathlib import Path
 
 # Add project src/ to path dynamically (works in local and container runs)
@@ -11,6 +13,11 @@ from answer_gen import generate_answer
 from model.schema import FinalRankedResults, RankedChunk
 from safety_guard import is_query_safe
 from query_classifier import classify_query, IntentType
+
+# --- Configuration (overridable via env for Cloud Run) ---
+MAX_QUERY_LENGTH = int(os.environ.get("INPUT_MAX_QUERY_LENGTH", "4000"))
+RATE_LIMIT_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "10"))
+RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("RATE_LIMIT_WINDOW_SECONDS", "300"))
 
 # Page config
 st.set_page_config(
@@ -45,6 +52,37 @@ for message in st.session_state.messages:
 
 # Chat input
 if query := st.chat_input("Ask a question about HR policies..."):
+    # --- Input validation (before any API calls) ---
+    q = query.strip()
+    if not q:
+        st.error("Please enter a question. The input cannot be empty.")
+        st.stop()
+    if len(q) > MAX_QUERY_LENGTH:
+        st.error(f"Question is too long (max {MAX_QUERY_LENGTH} characters). Please shorten it.")
+        st.stop()
+    try:
+        q.encode("utf-8").decode("utf-8")
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        st.error("Invalid characters in input. Please use plain text.")
+        st.stop()
+    query = q
+
+    # --- Rate limiting (protects OpenAI credits from abuse) ---
+    if "rate_limit_timestamps" not in st.session_state:
+        st.session_state.rate_limit_timestamps = []
+    now = time.time()
+    st.session_state.rate_limit_timestamps = [
+        t for t in st.session_state.rate_limit_timestamps
+        if now - t < RATE_LIMIT_WINDOW_SECONDS
+    ]
+    if len(st.session_state.rate_limit_timestamps) >= RATE_LIMIT_REQUESTS:
+        st.error(
+            "Too many requests. Please wait a few minutes before asking more questions. "
+            "This helps keep the service available for everyone."
+        )
+        st.stop()
+    st.session_state.rate_limit_timestamps.append(now)
+
     # Add user message to chat
     st.session_state.messages.append({"role": "user", "content": query})
     with st.chat_message("user"):
