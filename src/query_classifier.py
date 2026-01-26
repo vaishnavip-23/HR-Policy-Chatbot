@@ -29,11 +29,11 @@ class IntentType(Enum):
 INTENT_RESPONSES = {
     IntentType.GREETING: """Hello! 👋 I'm your HR Policy Assistant. I can help you find information about HR policies from IIMA, Chemexcil, and TCCAP organizations.
 
-Feel free to ask me questions like:
+Feel free to ask me questions like :
 - "What is the leave policy?"
 - "How do I apply for maternity leave?"
 - "What are the working hours?"
-
+Also, Do mention the organization name in the question.
 How can I assist you today?""",
     
     IntentType.ABOUT_APP: """I'm an AI-powered HR Policy Assistant designed to help you find accurate information from multiple HR policy documents.
