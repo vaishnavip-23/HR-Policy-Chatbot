@@ -1,6 +1,6 @@
 """
 Query Intent Classification Module
-Classifies user queries to determine how to handle them
+Classifies user queries to determine how to handle them (different intents)
 """
 import re
 import instructor
